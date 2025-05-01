@@ -1,0 +1,537 @@
+db.cs 
+
+ public List<SalesOrderDetails> GetOrderDetailsHeader(
+      string itemSubGrpKey, string itemKey, string brandKey, string styleKey, string shadeKey, string sizeKey,
+      string userid, string cobr, string fcyr, string fromMRP, string toMRP, bool stockWise)
+  {
+      List<SalesOrderDetails> salesOrderDetailsList = new List<SalesOrderDetails>();
+
+      using (SqlConnection con = new SqlConnection(_connectionString))
+      {
+          try
+          {
+              con.Open();
+              SqlCommand com = new SqlCommand("vrs_GetSalesOrderDetails_Headerupdated", con);
+              com.CommandType = CommandType.StoredProcedure;
+              com.Parameters.AddWithValue("@ITEMSUBGRP_KEY", (object)itemSubGrpKey ?? DBNull.Value);
+              com.Parameters.AddWithValue("@ITEM_KEY", (object)itemKey ?? DBNull.Value);
+              com.Parameters.AddWithValue("@BRAND_KEY", (object)brandKey ?? DBNull.Value);
+              com.Parameters.AddWithValue("@STYLE_KEY", (object)styleKey ?? DBNull.Value);
+              com.Parameters.AddWithValue("@SHADE_KEY", (object)shadeKey ?? DBNull.Value);
+              com.Parameters.AddWithValue("@STYLESIZE_ID", (object)sizeKey ?? DBNull.Value);
+              com.Parameters.AddWithValue("@loginid", userid);
+              com.Parameters.AddWithValue("@CoBr_Id", cobr);
+              com.Parameters.AddWithValue("@FcYr_Id", fcyr);
+              com.Parameters.AddWithValue("@FromMRP", (object)fromMRP ?? DBNull.Value);
+              com.Parameters.AddWithValue("@ToMRP", (object)toMRP ?? DBNull.Value);
+              com.Parameters.AddWithValue("@StockWise", stockWise);
+
+              SqlDataReader reader = com.ExecuteReader();
+
+              while (reader.Read())
+              {
+                  SalesOrderDetails salesOrderDetails = new SalesOrderDetails
+                  {
+                      Style_Key = reader["style_Key"].ToString(),
+                      Style_Code = reader["style_Code"].ToString(),
+                      FullImagePath = reader["FullImagePath"].ToString(),
+                      Shade_Name = reader.IsDBNull(reader.GetOrdinal("SHADE_NAME")) ? null : reader["SHADE_NAME"].ToString(),
+                      Shade_Key = reader.IsDBNull(reader.GetOrdinal("SHADE_KEY")) ? null : reader["SHADE_KEY"].ToString()
+                  };
+                  salesOrderDetailsList.Add(salesOrderDetails);
+              }
+          }
+          catch (Exception ex)
+          {
+              Console.WriteLine("Error while retrieving GetSalesOrderDetails: " + ex.Message);
+              throw;
+          }
+          finally
+          {
+              con.Close();
+          }
+      }
+
+      return salesOrderDetailsList;
+  }
+
+
+  public List<SalesOrderDetails> GetSalesOrderDetails(string itemSubGrpKey, string itemKey, string brandKey, string StyleKey, string shadeKey, string size, string userid, string cobr, string fcyr, string fromMRP, string toMRP, bool stockWise = false)
+  {
+      List<SalesOrderDetails> salesOrderDetailsList = new List<SalesOrderDetails>();
+      using (SqlConnection con = new SqlConnection(_connectionString))
+      {
+          try
+          {
+              con.Open();
+              SqlCommand com = new SqlCommand("vrs_GetSalesOrderDetails", con); -- currently not added vrs_GetSalesOrderDetailsupdated procedure
+              com.CommandType = CommandType.StoredProcedure;
+              com.Parameters.AddWithValue("@ITEMSUBGRP_KEY", itemSubGrpKey);
+              com.Parameters.AddWithValue("@ITEM_KEY", itemKey);
+              com.Parameters.AddWithValue("@BRAND_KEY", brandKey);
+              com.Parameters.AddWithValue("@STYLE_KEY", StyleKey);
+              com.Parameters.AddWithValue("@SHADE_KEY", shadeKey);
+              com.Parameters.AddWithValue("@STYLESIZE_ID", size);
+              com.Parameters.AddWithValue("@loginid", userid);
+              com.Parameters.AddWithValue("@CoBr_Id", cobr);
+              com.Parameters.AddWithValue("@FcYr_Id", fcyr);
+              com.Parameters.AddWithValue("@FromMRP", fromMRP);
+              com.Parameters.AddWithValue("@ToMRP", toMRP);
+              com.Parameters.AddWithValue("@StockWise", stockWise);
+
+              SqlDataReader reader = com.ExecuteReader();
+
+              while (reader.Read())
+              {
+                  SalesOrderDetails salesOrderDetails = new SalesOrderDetails();
+                  salesOrderDetails.ItemSubGrp_Key = reader["ItemSubGrp_Key"].ToString();
+                  salesOrderDetails.ItemSubGrp_Name = reader["ItemSubGrp_Name"].ToString();
+                  salesOrderDetails.Item_Key = reader["Item_Key"].ToString();
+                  salesOrderDetails.Item_Name = reader["Item_Name"].ToString();
+                  salesOrderDetails.Brand_Key = reader["Brand_Key"].ToString();
+                  salesOrderDetails.Brand_Name = reader["Brand_Name"].ToString();
+                  salesOrderDetails.Style_Key = reader["Style_Key"].ToString();
+                  salesOrderDetails.Style_Code = reader["Style_Code"].ToString();
+                  salesOrderDetails.Shade_Key = reader["Shade_Key"].ToString();
+                  salesOrderDetails.Shade_Name = reader["Shade_Name"].ToString();
+                  salesOrderDetails.StyleSize_Id = reader["StyleSize_Id"].ToString();
+                  salesOrderDetails.Size_Name = reader["Size_Name"].ToString();
+                  salesOrderDetails.CLQty = Convert.ToDecimal(reader["CLQty"]);
+                  salesOrderDetails.FullImagePath = reader["FullImagePath"].ToString();
+                  salesOrderDetails.mrp = reader["MRP"].ToString();
+                  salesOrderDetails.WSP = reader["WSP"].ToString();
+                  salesOrderDetailsList.Add(salesOrderDetails);
+              }
+          }
+          catch (Exception ex)
+          {
+              Console.WriteLine("Error while retrieving GetSalesOrderDetails: " + ex.Message);
+              throw;
+          }
+          finally
+          {
+              con.Close();
+          }
+      }
+      return salesOrderDetailsList;
+  }
+
+below are controller
+
+ [HttpPost]
+ public IActionResult GetOrderDetails(string itemSubGrpKey, string ItemKey, string brandKey, string styleKey, string shadeKey, string sizeKey, string fromMRP, string toMRP, bool stockWise,string userid,string cobr,string fcyr)
+ {
+     var dbop = new Models.db(_configuration);            
+     var items = dbop.GetSalesOrderDetails(itemSubGrpKey, ItemKey, brandKey, styleKey, shadeKey, sizeKey, userid, cobr, fcyr, fromMRP, toMRP, stockWise);
+     return Json(items);
+ }
+ [HttpPost]
+ public IActionResult GetOrderDetailsHeader(string itemSubGrpKey, string ItemKey, string brandKey, string styleKey, string shadeKey, string sizeKey,
+                                      string fromMRP, string toMRP, bool stockWise, string userid, string cobr, string fcyr)
+ {
+     var dbop = new Models.db(_configuration);
+     var items = dbop.GetOrderDetailsHeader(itemSubGrpKey, ItemKey, brandKey, styleKey, shadeKey, sizeKey, userid, cobr, fcyr, fromMRP, toMRP, stockWise);
+
+     // Return the view and pass the data
+     return Json(items);  // Return the view and model
+ }
+
+
+
+store procedures
+
+
+USE [MohiniCreation]
+GO
+/****** Object:  StoredProcedure [dbo].[vrs_GetSalesOrderDetails_Headerupdated]    Script Date: 30/04/2025 10:49:31 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+ALTER PROCEDURE [dbo].[vrs_GetSalesOrderDetails_Headerupdated]    
+(    
+    @ITEMSUBGRP_KEY NVARCHAR(255) = NULL,    
+    @ITEM_KEY NVARCHAR(255) = NULL,    
+    @BRAND_KEY NVARCHAR(255) = NULL,    
+    @STYLE_KEY NVARCHAR(255) = NULL,    
+    @SHADE_KEY NVARCHAR(255) = NULL,    
+    @STYLESIZE_ID NVARCHAR(255) = NULL,  
+    @loginid VARCHAR(50) = 'Admin',  
+    @CoBr_Id VARCHAR(10) = '01',  
+    @FcYr_Id VARCHAR(10) = '23',  
+    @FromMRP VARCHAR(10) = NULL,  
+    @ToMRP VARCHAR(10) = NULL,    
+    @StockWise INT = 0  
+)  
+AS     
+BEGIN    
+    DECLARE @StylePath NVARCHAR(MAX);    
+    SET @StylePath = (SELECT appsett_value FROM applnsettings WHERE appsett_id = 563);   
+
+    DECLARE @ShadeTable TABLE (ShadeKey NVARCHAR(MAX));  
+    DECLARE @SizeIdsTable TABLE (SizeId INT);  
+      
+    IF @STYLESIZE_ID IS NOT NULL   
+    BEGIN  
+        INSERT INTO @SizeIdsTable (SizeId)  
+        SELECT value FROM dbo.SplitString(@STYLESIZE_ID, ',');  
+    END  
+    IF @SHADE_KEY IS NOT NULL  
+    BEGIN  
+        INSERT INTO @ShadeTable (ShadeKey)  
+        SELECT value FROM dbo.SplitString(@SHADE_KEY, ',');  
+    END   
+
+    SELECT 
+        D.style_Code, 
+        REPLACE(CONCAT(@StylePath, ISNULL(NULLIF(D.STYLE_IMAGE, ''), '\NoImage.jpg')), '\', '/') AS FullImagePath,
+        D.style_Key,
+        STRING_AGG(F.SHADE_KEY, ',') AS SHADE_KEY,
+        STRING_AGG(F.SHADE_NAME, ', ') AS SHADE_NAME
+    FROM 
+        Item A 
+        INNER JOIN STYLE D ON D.ITEM_KEY = A.ITEM_KEY   
+        INNER JOIN STYLESHADE E ON E.STYLE_KEY = D.STYLE_KEY    
+        INNER JOIN SHADE F ON F.SHADE_KEY = E.SHADE_KEY
+        INNER JOIN STYLESIZE G ON G.STYLE_KEY = D.STYLE_KEY AND G.ITEM_KEY = D.ITEM_KEY
+    WHERE  
+        (@ITEMSUBGRP_KEY IS NULL OR A.ITEMSUBGRP_KEY = @ITEMSUBGRP_KEY) AND  
+        (@ITEM_KEY IS NULL OR A.ITEM_KEY = @ITEM_KEY) AND  
+        (@BRAND_KEY IS NULL OR A.BRAND_KEY = @BRAND_KEY) AND    
+        (@STYLE_KEY IS NULL OR D.STYLE_KEY = @STYLE_KEY) AND    
+        (@SHADE_KEY IS NULL OR F.SHADE_KEY IN (SELECT * FROM @ShadeTable)) AND    
+        (@STYLESIZE_ID IS NULL OR G.STYLESIZE_ID IN (SELECT * FROM @SizeIdsTable)) AND  
+        ((@FromMRP IS NULL OR D.MRP >= @FromMRP) AND  
+        (@ToMRP IS NULL OR D.MRP <= @ToMRP)) AND  
+        D.Style_Code NOT IN (SELECT DISTINCT Style_Code FROM VRS_SalesOrderAddCartDatils WHERE UserName = @loginid AND CoBr_Id = @CoBr_Id AND FcYr_Id = @FcYr_Id)  
+    GROUP BY 
+        D.style_Code, D.STYLE_IMAGE, D.style_Key
+    ORDER BY 
+        D.Style_Code  
+END
+
+
+second - old one
+
+USE [MohiniCreation]
+GO
+/****** Object:  StoredProcedure [dbo].[vrs_GetSalesOrderDetails]    Script Date: 30/04/2025 10:49:35 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+--EXEC vrs_GetSalesOrderDetails @ITEMSUBGRP_KEY ='013',@ITEM_KEY='012',@StockWise =1    
+--EXEC vrs_GetSalesOrderDetails @ITEMSUBGRP_KEY ='013',@ITEM_KEY='012',@BRAND_KEY='011',@STYLE_KEY='0110',@SHADE_KEY='011',@StockWise =1  ,@STYLESIZE_ID ='4',@StockWise =0    
+    
+ALTER     PROCEDURE [dbo].[vrs_GetSalesOrderDetails]    
+(    
+@ITEMSUBGRP_KEY NVARCHAR (255)=NUll,    
+@ITEM_KEY NVARCHAR (255)=Null ,    
+@BRAND_KEY NVARCHAR (255)=NULL,    
+@STYLE_KEY NVARCHAR (255)= null,    
+@SHADE_KEY NVARCHAR (255)= null,    
+@STYLESIZE_ID NVARCHAR (255)= NULL,  
+@loginid varchar(50)='Admin',  
+@CoBr_Id varchar(10)='01',  
+@FcYr_Id varchar(10)='23',  
+@FromMRP varchar(10)=NULL,  
+@ToMRP varchar(10)=NULL,    
+@StockWise Int=0 --0-Product, 1- StockWise  
+)  
+  
+AS     
+Begin    
+DECLARE @StylePath NVARCHAR(MAX);    
+SET @StylePath = (SELECT appsett_value FROM applnsettings WHERE appsett_id = 563);   
+--set @StylePath='/Salesorder/Images'  
+  
+DECLARE @ShadeTable TABLE (ShadeKey NVARCHAR(MAX));  
+DECLARE @SizeIdsTable TABLE (SizeId int);  
+   
+ If @STYLESIZE_ID is not null   
+ Begin  
+   INSERT INTO @SizeIdsTable (SizeId)  
+   SELECT value FROM dbo.SplitString(@STYLESIZE_ID, ',');  
+ End  
+ If @SHADE_KEY is not null  
+ Begin  
+   INSERT INTO @ShadeTable (ShadeKey)  
+   SELECT value FROM dbo.SplitString(@SHADE_KEY, ',');  
+ End   
+  
+If @StockWise =0    
+Begin    
+select B.ITEMSUBGRP_KEY,    
+  B.ItemSubGrp_Name,    
+  A.ITEM_KEY,    
+  A.Item_Name,    
+  A.BRAND_KEY,    
+  H.Brand_Name,    
+  D.STYLE_KEY,      
+  D.Style_Code,    
+  F.SHADE_KEY,    
+  F.Shade_Name,    
+  G.STYLESIZE_ID,    
+  G.Size_Name,    
+  cast(D.MRP+G.MrpRD as Int)MRP,    
+  cast(D.SPrice+G.WspRD as Int)WSP,    
+  (Select cast(isnull(sum(CLQTY),0) as int) from ItemStock where STYLESIZE_ID =G.STYLESIZE_ID and Style_Key=D.Style_Key and SHADE_KEY=E.SHADE_KEY) AS CLQTY,      
+  REPLACE(CONCAT(@StylePath, ISNULL(NULLIF(D.STYLE_IMAGE, ''), '\NoImage.jpg')), '\', '/') AS FullImagePath,
+  D.Remark   
+from Item A inner JOIN ITEMSUBGRP B ON B.ITEMSUBGRP_KEY= A.ITEMSUBGRP_KEY    
+inner JOIN STYLE D ON D.ITEM_KEY = A.ITEM_KEY    
+inner JOIN STYLESHADE E ON E.STYLE_KEY = D.STYLE_KEY    
+inner JOIN SHADE F ON F.SHADE_KEY = E.SHADE_KEY
+inner JOIN STYLESIZE G ON G.STYLE_KEY = D.STYLE_KEY AND G.ITEM_KEY = D.ITEM_KEY    
+inner Join Brand H on H.BRAND_KEY=A.BRAND_KEY
+inner join itemsize I on i.item_key=a.Item_key and I.ItemSize_key=G.ItemSize_Key
+
+WHERE     
+--B.ITEMSUBGRP_KEY=@ITEMSUBGRP_KEY AND    
+--A.ITEM_KEY=@ITEM_KEY AND    
+ (@ITEMSUBGRP_KEY IS NULL OR B.ITEMSUBGRP_KEY=@ITEMSUBGRP_KEY) AND  
+ (@ITEM_KEY IS NULL OR A.ITEM_KEY=@ITEM_KEY) AND  
+            (@BRAND_KEY IS NULL OR A.BRAND_KEY = @BRAND_KEY) AND    
+            (@STYLE_KEY IS NULL OR D.STYLE_KEY= @STYLE_KEY ) AND    
+            (@SHADE_KEY IS NULL OR F.SHADE_KEY in(select * from @ShadeTable)) AND    
+            (@STYLESIZE_ID IS NULL OR G.STYLESIZE_ID in(select * from @SizeIdsTable )) And  
+   ((@FromMRP is null or (D.MRP+G.MrpRD)>=@FromMRP) and  
+   (@ToMRP is null or (D.MRP+G.MrpRD)<=@ToMRP))  
+  and D.Style_Code not in (select Distinct Style_Code from VRS_SalesOrderAddCartDatils where  UserName=@loginid and  CoBr_Id=@CoBr_Id and FcYr_Id=@FcYr_Id)  
+order by D.Style_Code,I.SeqNo  
+End    
+Else If @StockWise=1    
+Begin    
+     
+select  B.ITEMSUBGRP_KEY,    
+  B.ItemSubGrp_Name,    
+  A.ITEM_KEY,    
+  A.Item_Name,    
+  A.BRAND_KEY,    
+  H.Brand_Name,    
+  D.STYLE_KEY,      
+  D.Style_Code,    
+  F.SHADE_KEY,    
+  F.Shade_Name,    
+  G.STYLESIZE_ID,    
+  G.Size_Name,      
+  cast(D.MRP+G.MrpRD as Int)MRP,    
+  cast(D.SPrice+G.WspRD as Int)WSP,   
+  cast(isnull(sum(i.CLQTY),0) as Int) AS CLQTY,   
+  REPLACE(CONCAT(@StylePath, ISNULL(NULLIF(D.STYLE_IMAGE, ''), '\NoImage.jpg')), '\', '/') AS FullImagePath,
+  D.Remark    
+  --,(Select isnull(sum(CLQTY),0) from ItemStock where STYLESIZE_ID =G.STYLESIZE_ID and Style_Key=D.Style_Key and SHADE_KEY=E.SHADE_KEY) AS CLQTY    
+from Item A inner JOIN ITEMSUBGRP B ON B.ITEMSUBGRP_KEY= A.ITEMSUBGRP_KEY    
+inner JOIN STYLE D ON D.ITEM_KEY = A.ITEM_KEY    
+inner JOIN STYLESHADE E ON E.STYLE_KEY = D.STYLE_KEY    
+inner JOIN SHADE F ON F.SHADE_KEY = E.SHADE_KEY    
+inner JOIN STYLESIZE G ON G.STYLE_KEY = D.STYLE_KEY AND G.ITEM_KEY = D.ITEM_KEY    
+inner Join Brand H on H.BRAND_KEY=A.BRAND_KEY    
+Inner Join ItemStock I on i.STYLESIZE_ID =G.STYLESIZE_ID and i.Style_Key=D.Style_Key and i.SHADE_KEY=E.SHADE_KEY    
+inner join itemsize j on j.item_key=a.Item_key and j.ItemSize_key=G.ItemSize_Key
+
+WHERE     
+--B.ITEMSUBGRP_KEY=@ITEMSUBGRP_KEY AND    
+--A.ITEM_KEY=@ITEM_KEY AND    
+(@ITEMSUBGRP_KEY IS NULL OR B.ITEMSUBGRP_KEY=@ITEMSUBGRP_KEY) AND  
+ (@ITEM_KEY IS NULL OR A.ITEM_KEY=@ITEM_KEY) AND  
+            (@BRAND_KEY IS NULL OR A.BRAND_KEY = @BRAND_KEY) AND    
+            (@STYLE_KEY IS NULL OR D.STYLE_KEY= @STYLE_KEY ) AND    
+            (@SHADE_KEY IS NULL OR F.SHADE_KEY in(select * from @ShadeTable)) AND    
+            (@STYLESIZE_ID IS NULL OR G.STYLESIZE_ID in(select * from @SizeIdsTable ))    
+   and ((@FromMRP is null or (D.MRP+G.MrpRD)>=@FromMRP) and  
+   (@ToMRP is null or (D.MRP+G.MrpRD)<=@ToMRP))  
+and D.Style_Code not in (select Distinct Style_Code from VRS_SalesOrderAddCartDatils where  UserName=@loginid and  CoBr_Id=@CoBr_Id and FcYr_Id=@FcYr_Id)  
+    
+    
+Group By     
+  B.ITEMSUBGRP_KEY,    
+  B.ItemSubGrp_Name,    
+  A.ITEM_KEY,    
+  A.Item_Name,    
+  A.BRAND_KEY,    
+  H.Brand_Name,    
+  D.STYLE_KEY,      
+  D.Style_Code,    
+  F.SHADE_KEY,    
+  F.Shade_Name,    
+  G.STYLESIZE_ID,    
+  G.Size_Name,    
+  D.MRP,    
+  D.STYLE_IMAGE ,  
+  G.MrpRD,  
+  D.SPrice,  
+  G.WspRD,  
+  D.Remark   
+  ,j.SeqNo 
+order by D.Style_Code,j.SeqNo  
+End    
+End    
+
+
+third - updated
+
+USE [MohiniCreation]
+GO
+/****** Object:  StoredProcedure [dbo].[vrs_GetSalesOrderDetailsupdate]    Script Date: 30/04/2025 10:49:39 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[vrs_GetSalesOrderDetailsupdate]
+(
+    @ITEMSUBGRP_KEY NVARCHAR(255) = NULL,
+    @ITEM_KEY NVARCHAR(255) = NULL,
+    @BRAND_KEY NVARCHAR(255) = NULL,
+    @STYLE_KEY NVARCHAR(255) = NULL,
+    @SHADE_NAME NVARCHAR(255) = NULL, -- Taking SHADE_NAME as input
+    @STYLESIZE_ID NVARCHAR(255) = NULL,
+    @loginid VARCHAR(50) = 'Admin',
+    @CoBr_Id VARCHAR(10) = '01',
+    @FcYr_Id VARCHAR(10) = '23',
+    @FromMRP VARCHAR(10) = NULL,
+    @ToMRP VARCHAR(10) = NULL,
+    @StockWise INT = 0 -- 0-Product, 1- StockWise
+)
+AS
+BEGIN
+    DECLARE @StylePath NVARCHAR(MAX);
+    SET @StylePath = (SELECT appsett_value FROM applnsettings WHERE appsett_id = 563);
+
+    DECLARE @ShadeKey NVARCHAR(MAX);
+    DECLARE @SizeIdsTable TABLE (SizeId INT);
+
+    -- If STYLESIZE_ID is provided, split and insert into @SizeIdsTable
+    IF @STYLESIZE_ID IS NOT NULL
+    BEGIN
+        INSERT INTO @SizeIdsTable (SizeId)
+        SELECT value FROM dbo.SplitString(@STYLESIZE_ID, ',');
+    END
+
+    -- If SHADE_NAME is provided, get the corresponding SHADE_KEY
+    IF @SHADE_NAME IS NOT NULL
+    BEGIN
+        SELECT @ShadeKey = SHADE_KEY
+        FROM SHADE
+        WHERE Shade_Name = @SHADE_NAME;
+    END
+
+    -- Start of main query
+    IF @StockWise = 0
+    BEGIN
+        SELECT 
+            B.ITEMSUBGRP_KEY,    
+            B.ItemSubGrp_Name,    
+            A.ITEM_KEY,    
+            A.Item_Name,    
+            A.BRAND_KEY,    
+            H.Brand_Name,    
+            D.STYLE_KEY,      
+            D.Style_Code,    
+            F.SHADE_KEY,    
+            F.Shade_Name,    
+            G.STYLESIZE_ID,    
+            G.Size_Name,    
+            CAST(D.MRP + G.MrpRD AS INT) MRP,    
+            CAST(D.SPrice + G.WspRD AS INT) WSP,    
+            (SELECT CAST(ISNULL(SUM(CLQTY), 0) AS INT) 
+             FROM ItemStock 
+             WHERE STYLESIZE_ID = G.STYLESIZE_ID 
+             AND Style_Key = D.Style_Key 
+             AND SHADE_KEY = F.SHADE_KEY) AS CLQTY,      
+            REPLACE(CONCAT(@StylePath, ISNULL(NULLIF(D.STYLE_IMAGE, ''), '\NoImage.jpg')), '\', '/') AS FullImagePath,
+            D.Remark   
+        FROM Item A 
+        INNER JOIN ITEMSUBGRP B ON B.ITEMSUBGRP_KEY = A.ITEMSUBGRP_KEY    
+        INNER JOIN STYLE D ON D.ITEM_KEY = A.ITEM_KEY    
+        INNER JOIN STYLESHADE E ON E.STYLE_KEY = D.STYLE_KEY    
+        INNER JOIN SHADE F ON F.SHADE_KEY = E.SHADE_KEY    
+        INNER JOIN STYLESIZE G ON G.STYLE_KEY = D.STYLE_KEY AND G.ITEM_KEY = D.ITEM_KEY    
+        INNER JOIN Brand H ON H.BRAND_KEY = A.BRAND_KEY    
+        INNER JOIN itemsize I ON I.item_key = A.Item_key AND I.ItemSize_key = G.ItemSize_Key
+        WHERE 
+            (@ITEMSUBGRP_KEY IS NULL OR B.ITEMSUBGRP_KEY = @ITEMSUBGRP_KEY) AND  
+            (@ITEM_KEY IS NULL OR A.ITEM_KEY = @ITEM_KEY) AND  
+            (@BRAND_KEY IS NULL OR A.BRAND_KEY = @BRAND_KEY) AND    
+            (@STYLE_KEY IS NULL OR D.STYLE_KEY = @STYLE_KEY) AND    
+            (@SHADE_NAME IS NULL OR F.SHADE_KEY = @ShadeKey) AND  -- Filter by ShadeKey from Shade table
+            (@STYLESIZE_ID IS NULL OR G.STYLESIZE_ID IN (SELECT * FROM @SizeIdsTable)) AND  
+            ((@FromMRP IS NULL OR (D.MRP + G.MrpRD) >= @FromMRP) AND  
+            (@ToMRP IS NULL OR (D.MRP + G.MrpRD) <= @ToMRP))  
+            AND D.Style_Code NOT IN 
+                (SELECT DISTINCT Style_Code 
+                 FROM VRS_SalesOrderAddCartDatils 
+                 WHERE UserName = @loginid 
+                 AND CoBr_Id = @CoBr_Id 
+                 AND FcYr_Id = @FcYr_Id)  
+        ORDER BY D.Style_Code, I.SeqNo  
+    END
+    ELSE IF @StockWise = 1
+    BEGIN
+        SELECT 
+            B.ITEMSUBGRP_KEY,    
+            B.ItemSubGrp_Name,    
+            A.ITEM_KEY,    
+            A.Item_Name,    
+            A.BRAND_KEY,    
+            H.Brand_Name,    
+            D.STYLE_KEY,      
+            D.Style_Code,    
+            F.SHADE_KEY,    
+            F.Shade_Name,    
+            G.STYLESIZE_ID,    
+            G.Size_Name,      
+            CAST(D.MRP + G.MrpRD AS INT) MRP,    
+            CAST(D.SPrice + G.WspRD AS INT) WSP,   
+            CAST(ISNULL(SUM(i.CLQTY), 0) AS INT) AS CLQTY,   
+            REPLACE(CONCAT(@StylePath, ISNULL(NULLIF(D.STYLE_IMAGE, ''), '\NoImage.jpg')), '\', '/') AS FullImagePath,
+            D.Remark   
+        FROM Item A 
+        INNER JOIN ITEMSUBGRP B ON B.ITEMSUBGRP_KEY = A.ITEMSUBGRP_KEY    
+        INNER JOIN STYLE D ON D.ITEM_KEY = A.ITEM_KEY    
+        INNER JOIN STYLESHADE E ON E.STYLE_KEY = D.STYLE_KEY    
+        INNER JOIN SHADE F ON F.SHADE_KEY = E.SHADE_KEY    
+        INNER JOIN STYLESIZE G ON G.STYLE_KEY = D.STYLE_KEY AND G.ITEM_KEY = D.ITEM_KEY    
+        INNER JOIN Brand H ON H.BRAND_KEY = A.BRAND_KEY    
+        INNER JOIN ItemStock I ON I.STYLESIZE_ID = G.STYLESIZE_ID AND I.Style_Key = D.Style_Key AND I.SHADE_KEY = F.SHADE_KEY    
+        INNER JOIN itemsize J ON J.item_key = A.Item_key AND J.ItemSize_key = G.ItemSize_Key
+        WHERE 
+            (@ITEMSUBGRP_KEY IS NULL OR B.ITEMSUBGRP_KEY = @ITEMSUBGRP_KEY) AND  
+            (@ITEM_KEY IS NULL OR A.ITEM_KEY = @ITEM_KEY) AND  
+            (@BRAND_KEY IS NULL OR A.BRAND_KEY = @BRAND_KEY) AND    
+            (@STYLE_KEY IS NULL OR D.STYLE_KEY = @STYLE_KEY) AND    
+            (@SHADE_NAME IS NULL OR F.SHADE_KEY = @ShadeKey) AND  -- Filter by ShadeKey from Shade table
+            (@STYLESIZE_ID IS NULL OR G.STYLESIZE_ID IN (SELECT * FROM @SizeIdsTable)) AND  
+            ((@FromMRP IS NULL OR (D.MRP + G.MrpRD) >= @FromMRP) AND  
+            (@ToMRP IS NULL OR (D.MRP + G.MrpRD) <= @ToMRP))  
+            AND D.Style_Code NOT IN 
+                (SELECT DISTINCT Style_Code 
+                 FROM VRS_SalesOrderAddCartDatils 
+                 WHERE UserName = @loginid 
+                 AND CoBr_Id = @CoBr_Id 
+                 AND FcYr_Id = @FcYr_Id)  
+        GROUP BY 
+            B.ITEMSUBGRP_KEY,    
+            B.ItemSubGrp_Name,    
+            A.ITEM_KEY,    
+            A.Item_Name,    
+            A.BRAND_KEY,    
+            H.Brand_Name,    
+            D.STYLE_KEY,      
+            D.Style_Code,    
+            F.SHADE_KEY,    
+            F.Shade_Name,    
+            G.STYLESIZE_ID,    
+            G.Size_Name,    
+            D.MRP,    
+            D.STYLE_IMAGE,  
+            G.MrpRD,  
+            D.SPrice,  
+            G.WspRD,  
+            D.Remark,  
+            J.SeqNo
+        ORDER BY D.Style_Code, J.SeqNo  
+    END
+END
+

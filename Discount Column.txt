@@ -1,0 +1,3 @@
+For Discount dropdown we need discount data 
+
+- select TxTmTDS_Id,TxTmTDS_Key,TxTmTDS_Name from TaxTermsTDS where TxTmTDS_Flag = 'm'
