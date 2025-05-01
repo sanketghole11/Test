@@ -1,0 +1,27 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+
+namespace SimplePageApp.Pages
+{
+    public class IndexModel : PageModel
+    {
+        [BindProperty]
+        public string Name { get; set; }
+
+        public string Message { get; set; }
+
+        public void OnGet()
+        {
+            // Page load
+        }
+
+        public IActionResult OnPost()
+        {
+            if (!string.IsNullOrEmpty(Name))
+            {
+                Message = $"Hello, {Name}! Welcome to our simple ASP.NET Core page!";
+            }
+            return Page();
+        }
+    }
+}
